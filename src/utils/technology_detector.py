@@ -23,7 +23,7 @@ TECHNOLOGY_PATTERNS = {
             ],
             "meta": ["generator"],
             "meta_content": ["WordPress"],
-            "confidence_base": 0.9
+            "confidence_base": 0.9,
         },
         "Drupal": {
             "patterns": [
@@ -33,7 +33,7 @@ TECHNOLOGY_PATTERNS = {
             ],
             "meta": ["generator"],
             "meta_content": ["Drupal"],
-            "confidence_base": 0.9
+            "confidence_base": 0.9,
         },
         "Joomla": {
             "patterns": [
@@ -43,7 +43,7 @@ TECHNOLOGY_PATTERNS = {
             ],
             "meta": ["generator"],
             "meta_content": ["Joomla"],
-            "confidence_base": 0.9
+            "confidence_base": 0.9,
         },
         "Wix": {
             "patterns": [
@@ -51,14 +51,14 @@ TECHNOLOGY_PATTERNS = {
                 r"_wix",
                 r"parastorage",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
         "Squarespace": {
             "patterns": [
                 r"squarespace",
                 r"sqsp",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
         "Shopify": {
             "patterns": [
@@ -66,14 +66,14 @@ TECHNOLOGY_PATTERNS = {
                 r"Shopify\.theme",
                 r"shopify-features",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
         "Webflow": {
             "patterns": [
                 r"webflow\.com",
                 r"webflow\.js",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
     },
     "frameworks": {
@@ -84,7 +84,7 @@ TECHNOLOGY_PATTERNS = {
                 r"data-reactroot",
                 r"data-reactid",
             ],
-            "confidence_base": 0.85
+            "confidence_base": 0.85,
         },
         "Vue.js": {
             "patterns": [
@@ -92,7 +92,7 @@ TECHNOLOGY_PATTERNS = {
                 r"__VUE__",
                 r"v-(?:if|for|bind|on|model)",
             ],
-            "confidence_base": 0.85
+            "confidence_base": 0.85,
         },
         "Angular": {
             "patterns": [
@@ -100,7 +100,7 @@ TECHNOLOGY_PATTERNS = {
                 r"angular(?:\.min)?\.js",
                 r"\[ng-",
             ],
-            "confidence_base": 0.85
+            "confidence_base": 0.85,
         },
         "Next.js": {
             "patterns": [
@@ -108,28 +108,28 @@ TECHNOLOGY_PATTERNS = {
                 r"__NEXT_DATA__",
                 r"next\.js",
             ],
-            "confidence_base": 0.9
+            "confidence_base": 0.9,
         },
         "Nuxt.js": {
             "patterns": [
                 r"_nuxt/",
                 r"__NUXT__",
             ],
-            "confidence_base": 0.9
+            "confidence_base": 0.9,
         },
         "Svelte": {
             "patterns": [
                 r"svelte",
                 r"__svelte",
             ],
-            "confidence_base": 0.85
+            "confidence_base": 0.85,
         },
         "jQuery": {
             "patterns": [
                 r"jquery(?:-\d+\.\d+\.\d+)?(?:\.min)?\.js",
                 r"\$\(document\)\.ready",
             ],
-            "confidence_base": 0.7
+            "confidence_base": 0.7,
         },
     },
     "analytics": {
@@ -140,42 +140,42 @@ TECHNOLOGY_PATTERNS = {
                 r"UA-\d+-\d+",
                 r"G-[A-Z0-9]+",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
         "Google Tag Manager": {
             "patterns": [
                 r"googletagmanager\.com/gtm\.js",
                 r"GTM-[A-Z0-9]+",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
         "Mixpanel": {
             "patterns": [
                 r"mixpanel\.com/libs/mixpanel",
                 r"mixpanel\.init",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
         "Segment": {
             "patterns": [
                 r"cdn\.segment\.com",
                 r"analytics\.load",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
         "Amplitude": {
             "patterns": [
                 r"amplitude\.com",
                 r"amplitude\.getInstance",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
         "Hotjar": {
             "patterns": [
                 r"hotjar\.com",
                 r"_hjSettings",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
     },
     "cdn": {
@@ -185,22 +185,18 @@ TECHNOLOGY_PATTERNS = {
                 r"cloudflare",
                 r"cdnjs\.cloudflare\.com",
             ],
-            "confidence_base": 0.9
+            "confidence_base": 0.9,
         },
         "Fastly": {
             "headers": ["x-fastly-request-id"],
             "patterns": [r"fastly"],
-            "confidence_base": 0.9
+            "confidence_base": 0.9,
         },
-        "Akamai": {
-            "headers": ["x-akamai"],
-            "patterns": [r"akamai"],
-            "confidence_base": 0.9
-        },
+        "Akamai": {"headers": ["x-akamai"], "patterns": [r"akamai"], "confidence_base": 0.9},
         "Amazon CloudFront": {
             "headers": ["x-amz-cf-id", "via"],
             "patterns": [r"cloudfront\.net"],
-            "confidence_base": 0.9
+            "confidence_base": 0.9,
         },
     },
     "hosting": {
@@ -209,7 +205,7 @@ TECHNOLOGY_PATTERNS = {
                 r"amazonaws\.com",
                 r"\.aws\.",
             ],
-            "confidence_base": 0.8
+            "confidence_base": 0.8,
         },
         "Vercel": {
             "headers": ["x-vercel-id"],
@@ -217,7 +213,7 @@ TECHNOLOGY_PATTERNS = {
                 r"vercel\.app",
                 r"\.vercel\.com",
             ],
-            "confidence_base": 0.9
+            "confidence_base": 0.9,
         },
         "Netlify": {
             "headers": ["x-nf-request-id"],
@@ -225,20 +221,20 @@ TECHNOLOGY_PATTERNS = {
                 r"netlify\.app",
                 r"\.netlify\.com",
             ],
-            "confidence_base": 0.9
+            "confidence_base": 0.9,
         },
         "GitHub Pages": {
             "patterns": [
                 r"github\.io",
                 r"pages\.github\.com",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
         "Heroku": {
             "patterns": [
                 r"herokuapp\.com",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
     },
     "advertising": {
@@ -248,20 +244,20 @@ TECHNOLOGY_PATTERNS = {
                 r"googlesyndication\.com",
                 r"adsbygoogle",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
         "Facebook Pixel": {
             "patterns": [
                 r"facebook\.net/.*?/fbevents\.js",
                 r"fbq\(",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
         "DoubleClick": {
             "patterns": [
                 r"doubleclick\.net",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
     },
     "security": {
@@ -270,14 +266,14 @@ TECHNOLOGY_PATTERNS = {
                 r"google\.com/recaptcha",
                 r"grecaptcha",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
         "Cloudflare Turnstile": {
             "patterns": [
                 r"challenges\.cloudflare\.com",
                 r"turnstile",
             ],
-            "confidence_base": 0.95
+            "confidence_base": 0.95,
         },
     },
 }
@@ -315,11 +311,7 @@ class TechnologyDetector:
         # Check each category
         for category, technologies in self.patterns.items():
             for tech_name, tech_patterns in technologies.items():
-                confidence = self._check_technology(
-                    html,
-                    headers or {},
-                    tech_patterns
-                )
+                confidence = self._check_technology(html, headers or {}, tech_patterns)
 
                 if confidence > 0:
                     detected[tech_name] = {
@@ -329,13 +321,7 @@ class TechnologyDetector:
                     }
 
         # Sort by confidence
-        detected = dict(
-            sorted(
-                detected.items(),
-                key=lambda x: x[1]["confidence"],
-                reverse=True
-            )
-        )
+        detected = dict(sorted(detected.items(), key=lambda x: x[1]["confidence"], reverse=True))
 
         return {
             "detected": detected,
@@ -372,6 +358,7 @@ class TechnologyDetector:
         # Check meta tags
         if "meta" in patterns:
             from bs4 import BeautifulSoup
+
             soup = BeautifulSoup(html, "lxml")
 
             for meta_name in patterns["meta"]:

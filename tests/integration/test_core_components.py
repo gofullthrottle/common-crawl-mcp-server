@@ -4,8 +4,9 @@ This module tests the integration between CDX client, S3 manager,
 WARC parser, and caching system.
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from src.config import get_config
 from src.core.cache import CacheManager
@@ -153,10 +154,7 @@ class TestCDXClient:
     async def test_search_index(self, cdx_client):
         """Test searching CDX index."""
         # Search for a common domain
-        results = await cdx_client.search_index(
-            query="example.com",
-            limit=5
-        )
+        results = await cdx_client.search_index(query="example.com", limit=5)
 
         assert isinstance(results, list)
         # Results may be empty depending on crawl, but should not error
@@ -164,10 +162,7 @@ class TestCDXClient:
     @pytest.mark.asyncio
     async def test_search_with_limit(self, cdx_client):
         """Test search respects limit."""
-        results = await cdx_client.search_index(
-            query="example.com",
-            limit=3
-        )
+        results = await cdx_client.search_index(query="example.com", limit=3)
 
         assert len(results) <= 3
 
@@ -256,7 +251,8 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_server_health_check_components(self, config):
         """Test that all components can be initialized for health check."""
-        from src.server import get_cache, get_cdx_client, get_s3_manager, get_warc_parser
+        from src.server import (get_cache, get_cdx_client, get_s3_manager,
+                                get_warc_parser)
 
         # All components should initialize without error
         cache = get_cache()

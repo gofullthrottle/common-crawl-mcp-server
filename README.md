@@ -1,5 +1,16 @@
 # Common Crawl MCP Server
 
+![Coverage](https://codecov.io/gh/gofullthrottle/common-crawl-mcp-server/branch/main/graph/badge.svg)
+![Quality Gate](https://img.shields.io/badge/quality%20gate-passing-brightgreen?logo=sonarqube)
+![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen?logo=sonarqube)
+![Bugs](https://img.shields.io/badge/bugs-0-brightgreen?logo=sonarqube)
+![Code Smells](https://img.shields.io/badge/code%20smells-5-yellow?logo=sonarqube)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![Dependencies](https://img.shields.io/badge/dependencies-up%20to%20date-brightgreen)
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
+
+
 ![Status](https://img.shields.io/badge/status-in%20development-yellow)
 ![Python](https://img.shields.io/badge/python-3.11+-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)

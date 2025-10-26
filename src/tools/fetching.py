@@ -32,6 +32,7 @@ def _get_cache() -> CacheManager:
     global _cache
     if _cache is None:
         from ..server import get_cache
+
         _cache = get_cache()
     return _cache
 
@@ -41,6 +42,7 @@ def _get_cdx_client() -> CDXClient:
     global _cdx_client
     if _cdx_client is None:
         from ..server import get_cdx_client
+
         _cdx_client = get_cdx_client()
     return _cdx_client
 
@@ -50,6 +52,7 @@ def _get_s3_manager() -> S3Manager:
     global _s3_manager
     if _s3_manager is None:
         from ..server import get_s3_manager
+
         _s3_manager = get_s3_manager()
     return _s3_manager
 
@@ -59,6 +62,7 @@ def _get_warc_parser() -> WarcParser:
     global _warc_parser
     if _warc_parser is None:
         from ..server import get_warc_parser
+
         _warc_parser = get_warc_parser()
     return _warc_parser
 
@@ -276,10 +280,12 @@ async def fetch_warc_records(
                 )
 
                 if not index_results:
-                    records.append({
-                        "url": url,
-                        "error": "Not found in index",
-                    })
+                    records.append(
+                        {
+                            "url": url,
+                            "error": "Not found in index",
+                        }
+                    )
                     continue
 
                 index_record = index_results[0]
@@ -291,30 +297,36 @@ async def fetch_warc_records(
                 warc_record = parser.find_record_by_url(warc_content, url)
 
                 if not warc_record:
-                    records.append({
-                        "url": url,
-                        "error": "WARC record not found",
-                    })
+                    records.append(
+                        {
+                            "url": url,
+                            "error": "WARC record not found",
+                        }
+                    )
                     continue
 
                 # Add record
-                records.append({
-                    "url": url,
-                    "record_id": warc_record.record_id,
-                    "record_type": warc_record.record_type,
-                    "content_type": warc_record.content_type,
-                    "content_length": warc_record.content_length,
-                    "date": warc_record.date.isoformat(),
-                    "http_headers": warc_record.http_headers,
-                    "payload_size": len(warc_record.payload) if warc_record.payload else 0,
-                })
+                records.append(
+                    {
+                        "url": url,
+                        "record_id": warc_record.record_id,
+                        "record_type": warc_record.record_type,
+                        "content_type": warc_record.content_type,
+                        "content_length": warc_record.content_length,
+                        "date": warc_record.date.isoformat(),
+                        "http_headers": warc_record.http_headers,
+                        "payload_size": len(warc_record.payload) if warc_record.payload else 0,
+                    }
+                )
 
             except Exception as e:
                 logger.error(f"Error fetching WARC for {url}: {e}")
-                records.append({
-                    "url": url,
-                    "error": str(e),
-                })
+                records.append(
+                    {
+                        "url": url,
+                        "error": str(e),
+                    }
+                )
 
         return {
             "crawl_id": crawl_id,

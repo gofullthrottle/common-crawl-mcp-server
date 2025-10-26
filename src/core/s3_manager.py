@@ -184,9 +184,7 @@ class S3Manager:
 
         try:
             decompressed_data = gzip.decompress(compressed_data)
-            logger.info(
-                f"Decompressed {len(compressed_data):,} → {len(decompressed_data):,} bytes"
-            )
+            logger.info(f"Decompressed {len(compressed_data):,} → {len(decompressed_data):,} bytes")
             return decompressed_data
         except gzip.BadGzipFile:
             logger.warning(f"File {key} is not gzipped, returning as-is")
@@ -235,9 +233,7 @@ class S3Manager:
             # For anonymous access, use get_object with Range to avoid auth issues
             # This only fetches metadata, not actual content
             self.client.get_object(
-                Bucket=self.bucket,
-                Key=key,
-                Range="bytes=0-0"  # Just check if file exists
+                Bucket=self.bucket, Key=key, Range="bytes=0-0"  # Just check if file exists
             )
             return True
         except ClientError as e:
@@ -267,11 +263,7 @@ class S3Manager:
         """
         try:
             # Use Range request to get metadata including ContentLength
-            response = self.client.get_object(
-                Bucket=self.bucket,
-                Key=key,
-                Range="bytes=0-0"
-            )
+            response = self.client.get_object(Bucket=self.bucket, Key=key, Range="bytes=0-0")
             # ContentRange header format: "bytes 0-0/12345" where 12345 is total size
             content_range = response.get("ContentRange", "")
             if content_range and "/" in content_range:

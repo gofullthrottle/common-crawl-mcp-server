@@ -158,10 +158,35 @@ def sanitize_html(html: str, allowed_tags: Optional[list[str]] = None) -> str:
     """
     if allowed_tags is None:
         allowed_tags = [
-            "p", "br", "span", "div", "h1", "h2", "h3", "h4", "h5", "h6",
-            "ul", "ol", "li", "a", "strong", "em", "b", "i", "u",
-            "table", "tr", "td", "th", "tbody", "thead", "tfoot",
-            "blockquote", "pre", "code"
+            "p",
+            "br",
+            "span",
+            "div",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            "ul",
+            "ol",
+            "li",
+            "a",
+            "strong",
+            "em",
+            "b",
+            "i",
+            "u",
+            "table",
+            "tr",
+            "td",
+            "th",
+            "tbody",
+            "thead",
+            "tfoot",
+            "blockquote",
+            "pre",
+            "code",
         ]
 
     try:
@@ -273,13 +298,10 @@ def extract_links(html: str, base_url: Optional[str] = None) -> list[dict[str, s
         # Resolve relative URLs if base_url provided
         if base_url and not href.startswith(("http://", "https://", "mailto:", "tel:")):
             from urllib.parse import urljoin
+
             href = urljoin(base_url, href)
 
-        links.append({
-            "href": href,
-            "text": text,
-            "title": title
-        })
+        links.append({"href": href, "text": text, "title": title})
 
     return links
 

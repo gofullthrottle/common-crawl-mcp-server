@@ -181,17 +181,18 @@ async def test_s3_connection() -> dict[str, Any]:
         }
 
 
-# Discovery & Metadata Tools (Phase 2)
-from .tools import discovery
-
-# Data Fetching & Extraction Tools (Phase 3)
-from .tools import fetching
-
-# HTML Parsing & Analysis Tools (Phase 4)
-from .tools import parsing
-
+# MCP Prompts (Phase 8)
+from .prompts import (competitive_analysis, content_discovery, domain_research,
+                      seo_analysis)
+# MCP Resources (Phase 7)
+from .resources import (get_crawl_info, get_dataset_info,
+                        get_dataset_records_resource, get_investigation_state,
+                        list_all_crawls, list_datasets, list_investigations)
 # Aggregation & Statistics Tools (Phase 5)
-from .tools import aggregation
+# HTML Parsing & Analysis Tools (Phase 4)
+# Data Fetching & Extraction Tools (Phase 3)
+# Discovery & Metadata Tools (Phase 2)
+from .tools import aggregation, discovery, fetching, parsing
 
 
 @mcp.tool()
@@ -410,9 +411,7 @@ async def analyze_technologies(url: str, crawl_id: str = "CC-MAIN-2024-10") -> d
 
 
 @mcp.tool()
-async def extract_structured_data(
-    url: str, crawl_id: str = "CC-MAIN-2024-10"
-) -> dict[str, Any]:
+async def extract_structured_data(url: str, crawl_id: str = "CC-MAIN-2024-10") -> dict[str, Any]:
     """Extract structured data (JSON-LD, Open Graph, Twitter Cards).
 
     Args:
@@ -561,6 +560,207 @@ async def header_analysis(
     """
     result = await aggregation.header_analysis(domain, crawl_id, sample_size)
     return result.model_dump()
+
+
+# ============================================================================
+# Phase 6: Export & Integration Tools
+# ============================================================================
+
+
+@mcp.tool()
+async def export_to_csv(
+    data: list[dict], output_path: str, fields: Optional[list[str]] = None
+) -> dict[str, Any]:
+    """Export data to CSV format with automatic field flattening.
+
+    Args:
+        data: List of dictionaries to export
+        output_path: Path to output CSV file
+        fields: Optional list of fields to export (auto-detected if not provided)
+
+    Returns:
+        Export statistics and file information
+    """
+    from .tools import export as export_tools
+
+    result = await export_tools.export_to_csv(data, output_path, fields=fields)
+    return result.model_dump()
+
+
+@mcp.tool()
+async def export_to_jsonl(data: list[dict], output_path: str) -> dict[str, Any]:
+    """Export data to JSON Lines format.
+
+    Args:
+        data: List of dictionaries to export
+        output_path: Path to output JSONL file
+
+    Returns:
+        Export statistics and file information
+    """
+    from .tools import export as export_tools
+
+    result = await export_tools.export_to_jsonl(data, output_path)
+    return result.model_dump()
+
+
+@mcp.tool()
+async def create_dataset(
+    name: str,
+    description: str,
+    data: list[dict],
+    metadata: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    """Create a named dataset from query results.
+
+    Args:
+        name: Dataset name (must be unique)
+        description: Dataset description
+        data: List of records to store
+        metadata: Optional metadata dictionary
+
+    Returns:
+        Dataset information including ID and record count
+    """
+    from .tools import export as export_tools
+
+    result = await export_tools.create_dataset(name, description, data, metadata=metadata)
+    return result.model_dump()
+
+
+@mcp.tool()
+async def generate_report(
+    report_type: str,
+    data: dict[str, Any],
+    output_path: str,
+    format: str = "markdown",
+) -> dict[str, Any]:
+    """Generate formatted report from analysis data.
+
+    Args:
+        report_type: Type of report ("domain_analysis", "tech_stack", "seo_audit")
+        data: Report data dictionary
+        output_path: Path to output file
+        format: Output format ("markdown" or "html")
+
+    Returns:
+        Report generation statistics
+    """
+    from .tools import export as export_tools
+
+    result = await export_tools.generate_report(report_type, data, output_path, format=format)
+    return result.model_dump()
+
+
+@mcp.tool()
+async def export_warc_subset(urls: list[str], crawl_id: str, output_path: str) -> dict[str, Any]:
+    """Export WARC records for specified URLs.
+
+    Args:
+        urls: List of URLs to export
+        crawl_id: Common Crawl crawl identifier
+        output_path: Path to output WARC file
+
+    Returns:
+        Export statistics including records exported and errors
+    """
+    from .tools import export as export_tools
+
+    result = await export_tools.export_warc_subset(urls, crawl_id, output_path)
+    return result.model_dump()
+
+
+# ============================================================================
+# Phase 9: Advanced Analysis Tools
+# ============================================================================
+
+from .tools import advanced
+
+
+@mcp.tool()
+async def classify_content(url: str, crawl_id: str = "CC-MAIN-2024-10") -> dict[str, Any]:
+    """Classify web page by type and purpose.
+
+    Detects page types: blog, product, documentation, news, landing_page, other
+
+    Uses composition of existing analysis tools to gather classification signals
+    from URL patterns, schema.org structured data, and content structure.
+
+    Args:
+        url: URL to classify
+        crawl_id: Common Crawl crawl identifier
+
+    Returns:
+        Classification result with page type, confidence, and supporting signals
+
+    Example:
+        >>> result = await classify_content("https://example.com/blog/post")
+        >>> print(result["page_type"])
+        'blog'
+    """
+    result = await advanced.content_classification(url, crawl_id)
+    return result.model_dump()
+
+
+@mcp.tool()
+async def detect_spam(url: str, crawl_id: str = "CC-MAIN-2024-10") -> dict[str, Any]:
+    """Detect if page is spam or low-quality.
+
+    Analyzes multiple quality signals including security headers, title/meta quality,
+    link patterns, keyword stuffing, and technology legitimacy. Returns spam score 0-100
+    where higher scores indicate more likely spam.
+
+    Args:
+        url: URL to analyze
+        crawl_id: Common Crawl crawl identifier
+
+    Returns:
+        Spam analysis with score, detected signals, and recommendation
+
+    Example:
+        >>> result = await detect_spam("https://example.com")
+        >>> print(result["spam_score"])
+        15.0
+        >>> print(result["recommendation"])
+        'likely_legitimate'
+    """
+    result = await advanced.spam_detection(url, crawl_id)
+    return result.model_dump()
+
+
+@mcp.tool()
+async def analyze_trends(
+    domain: str, crawl_ids: list[str], sample_size: int = 100
+) -> dict[str, Any]:
+    """Analyze trends in domain evolution across multiple crawls.
+
+    Tracks page count changes, technology adoption/removal trends, and generates
+    insights from statistical patterns over time.
+
+    Args:
+        domain: Domain to analyze (e.g., "example.com")
+        crawl_ids: List of crawl IDs in chronological order (at least 2)
+        sample_size: Number of pages to sample per crawl (default: 100)
+
+    Returns:
+        Trend analysis with detected trends, rate of change, and generated insights
+
+    Example:
+        >>> result = await analyze_trends(
+        ...     "example.com",
+        ...     ["CC-MAIN-2024-10", "CC-MAIN-2024-18"],
+        ...     sample_size=100
+        ... )
+        >>> print(result["insights"])
+        ['Domain is growing: 25.5% increase in indexed pages']
+    """
+    result = await advanced.trend_analysis(domain, crawl_ids, sample_size=sample_size)
+    return result.model_dump()
+
+
+# ============================================================================
+# Server Information
+# ============================================================================
 
 
 @mcp.tool()

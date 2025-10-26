@@ -2,14 +2,10 @@
 
 import pytest
 
-from src.tools.parsing import (
-    analyze_seo_metrics,
-    analyze_technologies,
-    detect_language,
-    extract_links_analysis,
-    extract_structured_data_from_page,
-    parse_html_content,
-)
+from src.tools.parsing import (analyze_seo_metrics, analyze_technologies,
+                               detect_language, extract_links_analysis,
+                               extract_structured_data_from_page,
+                               parse_html_content)
 
 
 @pytest.mark.asyncio
@@ -57,11 +53,7 @@ async def test_extract_links_analysis():
     assert result.total_links >= 0
 
     # Total links should be at least the sum of categorized links
-    categorized = (
-        len(result.internal_links)
-        + len(result.external_links)
-        + len(result.broken_links)
-    )
+    categorized = len(result.internal_links) + len(result.external_links) + len(result.broken_links)
     assert result.total_links >= categorized
 
 

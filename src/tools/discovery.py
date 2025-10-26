@@ -29,6 +29,7 @@ def _get_cache() -> CacheManager:
     global _cache
     if _cache is None:
         from ..server import get_cache
+
         _cache = get_cache()
     return _cache
 
@@ -38,6 +39,7 @@ def _get_cdx_client() -> CDXClient:
     global _cdx_client
     if _cdx_client is None:
         from ..server import get_cdx_client
+
         _cdx_client = get_cdx_client()
     return _cdx_client
 
@@ -47,6 +49,7 @@ def _get_s3_manager() -> S3Manager:
     global _s3_manager
     if _s3_manager is None:
         from ..server import get_s3_manager
+
         _s3_manager = get_s3_manager()
     return _s3_manager
 
@@ -307,7 +310,11 @@ async def get_domain_stats(
 
         for record in results:
             # Extract subdomain
-            url_domain = record.url.split("://")[1].split("/")[0] if "://" in record.url else record.url.split("/")[0]
+            url_domain = (
+                record.url.split("://")[1].split("/")[0]
+                if "://" in record.url
+                else record.url.split("/")[0]
+            )
             subdomains.add(url_domain)
 
             # Aggregate size
@@ -329,7 +336,11 @@ async def get_domain_stats(
             "status_codes": status_codes,
             "mime_types": mime_types,
             "sample_size": sample_size,
-            "note": f"Stats based on sample of up to {sample_size} pages" if len(results) == sample_size else "Complete domain coverage",
+            "note": (
+                f"Stats based on sample of up to {sample_size} pages"
+                if len(results) == sample_size
+                else "Complete domain coverage"
+            ),
         }
 
         # Cache for 6 hours

@@ -13,25 +13,12 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 
 from ..core.cache import CacheManager
-from ..models.schemas import (
-    LanguageInfo,
-    LinkAnalysis,
-    ParsedHtml,
-    SeoAnalysis,
-    SeoIssue,
-    StructuredData,
-    Technology,
-    TechStack,
-)
-from ..utils.html_parser import (
-    extract_clean_text,
-    extract_headings,
-    extract_links,
-    extract_meta_tags,
-    parse_html,
-)
+from ..models.schemas import (LanguageInfo, LinkAnalysis, PageContent,
+                              ParsedHtml, SeoAnalysis, SeoIssue,
+                              StructuredData, Technology, TechStack)
+from ..utils.html_parser import (extract_clean_text, extract_headings,
+                                 extract_links, extract_meta_tags, parse_html)
 from ..utils.technology_detector import TechnologyDetector
-from ..models.schemas import PageContent
 from .fetching import fetch_page_content as fetch_page_dict
 
 logger = logging.getLogger(__name__)
@@ -173,9 +160,7 @@ async def parse_html_content(url: str, crawl_id: str = "CC-MAIN-2024-10") -> Par
     return result
 
 
-async def extract_links_analysis(
-    url: str, crawl_id: str = "CC-MAIN-2024-10"
-) -> LinkAnalysis:
+async def extract_links_analysis(url: str, crawl_id: str = "CC-MAIN-2024-10") -> LinkAnalysis:
     """Extract and analyze links from a page.
 
     Args:
@@ -246,9 +231,7 @@ async def extract_links_analysis(
     return result
 
 
-async def analyze_technologies(
-    url: str, crawl_id: str = "CC-MAIN-2024-10"
-) -> TechStack:
+async def analyze_technologies(url: str, crawl_id: str = "CC-MAIN-2024-10") -> TechStack:
     """Detect technologies used by a website.
 
     Args:
@@ -375,9 +358,7 @@ async def extract_structured_data_from_page(
     return result
 
 
-async def analyze_seo_metrics(
-    url: str, crawl_id: str = "CC-MAIN-2024-10"
-) -> SeoAnalysis:
+async def analyze_seo_metrics(url: str, crawl_id: str = "CC-MAIN-2024-10") -> SeoAnalysis:
     """Analyze SEO best practices for a page.
 
     Args:
@@ -477,9 +458,7 @@ async def analyze_seo_metrics(
         score -= 3
 
     # Check heading structure
-    heading_structure = {
-        level: len(headings) for level, headings in parsed.headings.items()
-    }
+    heading_structure = {level: len(headings) for level, headings in parsed.headings.items()}
 
     h1_count = heading_structure.get("h1", 0)
     if h1_count == 0:
@@ -643,13 +622,9 @@ async def detect_language(url: str, crawl_id: str = "CC-MAIN-2024-10") -> Langua
                         html_lang_attribute=None,
                     )
                 else:
-                    result = LanguageInfo(
-                        url=url, detected_language="unknown", confidence=0.0
-                    )
+                    result = LanguageInfo(url=url, detected_language="unknown", confidence=0.0)
             else:
-                result = LanguageInfo(
-                    url=url, detected_language="unknown", confidence=0.0
-                )
+                result = LanguageInfo(url=url, detected_language="unknown", confidence=0.0)
 
         except ImportError:
             logger.warning("langdetect library not installed, falling back to 'en'")

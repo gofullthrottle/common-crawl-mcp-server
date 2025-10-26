@@ -13,9 +13,11 @@ from urllib.parse import urlparse
 
 from ..core.cache import CacheManager
 from ..core.cc_client import CDXClient
-from ..models.schemas import TechReport, LinkGraph, KeywordStats, Timeline, HeaderReport
-from .parsing import analyze_technologies, extract_links_analysis, parse_html_content
+from ..models.schemas import (HeaderReport, KeywordStats, LinkGraph,
+                              TechReport, Timeline)
 from .fetching import fetch_page_content as fetch_page_dict
+from .parsing import (analyze_technologies, extract_links_analysis,
+                      parse_html_content)
 
 logger = logging.getLogger(__name__)
 
@@ -214,12 +216,7 @@ async def domain_link_graph(
     if not search_results:
         logger.warning(f"No pages found for domain: {domain}")
         return LinkGraph(
-            domain=domain,
-            crawl_id=crawl_id,
-            nodes=[],
-            edges=[],
-            hub_pages=[],
-            pagerank={}
+            domain=domain, crawl_id=crawl_id, nodes=[], edges=[], hub_pages=[], pagerank={}
         )
 
     # Extract unique URLs (CDX may have duplicates)
@@ -293,10 +290,10 @@ async def domain_link_graph(
 
     # Step 4: Calculate hub pages (most linked-to)
     hub_pages = sorted(
-        [(url, count) for url, count in inbound_counts.items()],
-        key=lambda x: x[1],
-        reverse=True
-    )[:20]  # Top 20 hub pages
+        [(url, count) for url, count in inbound_counts.items()], key=lambda x: x[1], reverse=True
+    )[
+        :20
+    ]  # Top 20 hub pages
 
     # Step 5: Calculate simple PageRank
     pagerank = _calculate_pagerank(nodes_list, edges, iterations=20)
@@ -427,7 +424,7 @@ async def keyword_frequency_analysis(
             keywords=keywords,
             frequencies={},
             total_occurrences={kw: 0 for kw in keywords},
-            tfidf_scores={}
+            tfidf_scores={},
         )
 
     # Extract unique URLs
@@ -450,10 +447,7 @@ async def keyword_frequency_analysis(
                 if progress_callback:
                     progress_callback(index + 1, total_pages)
 
-                return {
-                    "url": result.url,
-                    "text": result.text or ""
-                }
+                return {"url": result.url, "text": result.text or ""}
             except Exception as e:
                 logger.error(f"Error extracting text from {url}: {e}")
                 return None
@@ -483,7 +477,7 @@ async def keyword_frequency_analysis(
             search_keyword = keyword if case_sensitive else keyword.lower()
 
             # Count occurrences using word boundary matching
-            pattern = r'\b' + re.escape(search_keyword) + r'\b'
+            pattern = r"\b" + re.escape(search_keyword) + r"\b"
             matches = re.findall(pattern, search_text)
             count = len(matches)
 
@@ -493,18 +487,14 @@ async def keyword_frequency_analysis(
                 document_frequencies[keyword] += 1
 
     # Step 4: Calculate TF-IDF scores
-    tfidf_scores = _calculate_tfidf(
-        frequencies,
-        document_frequencies,
-        total_pages
-    )
+    tfidf_scores = _calculate_tfidf(frequencies, document_frequencies, total_pages)
 
     # Create stats
     stats = KeywordStats(
         keywords=keywords,
         frequencies=frequencies,
         total_occurrences=total_occurrences,
-        tfidf_scores=tfidf_scores
+        tfidf_scores=tfidf_scores,
     )
 
     # Cache for 7 days
@@ -626,7 +616,7 @@ async def domain_evolution_timeline(
         page_counts[crawl_id] = len(urls)
 
         # Calculate total size (approximation from CDX records)
-        total_size = sum(getattr(result, 'length', 0) for result in search_results[:sample_size])
+        total_size = sum(getattr(result, "length", 0) for result in search_results[:sample_size])
         size_bytes[crawl_id] = total_size
 
         # Analyze technologies (sample first 10 pages for performance)
@@ -656,7 +646,9 @@ async def domain_evolution_timeline(
 
         technologies_by_crawl[crawl_id] = technologies
 
-        logger.info(f"Crawl {crawl_id}: {page_counts[crawl_id]} pages, {len(technologies)} technologies")
+        logger.info(
+            f"Crawl {crawl_id}: {page_counts[crawl_id]} pages, {len(technologies)} technologies"
+        )
 
     # Step 2: Calculate technology changes
     technologies_added = {}
@@ -743,7 +735,7 @@ async def header_analysis(
             caching_policies={},
             servers={},
             security_score=0.0,
-            recommendations=["No data available for analysis"]
+            recommendations=["No data available for analysis"],
         )
 
     # Extract unique URLs
@@ -766,10 +758,7 @@ async def header_analysis(
                 if progress_callback:
                     progress_callback(index + 1, total_pages)
 
-                return {
-                    "url": url,
-                    "headers": page_dict.get("headers", {})
-                }
+                return {"url": url, "headers": page_dict.get("headers", {})}
             except Exception as e:
                 logger.error(f"Error fetching headers from {url}: {e}")
                 return None
@@ -868,14 +857,10 @@ async def header_analysis(
         )
 
     if security_headers_adoption.get("x-frame-options", 0) < 80:
-        recommendations.append(
-            "Add X-Frame-Options header to prevent clickjacking attacks"
-        )
+        recommendations.append("Add X-Frame-Options header to prevent clickjacking attacks")
 
     if security_headers_adoption.get("x-content-type-options", 0) < 80:
-        recommendations.append(
-            "Set X-Content-Type-Options: nosniff to prevent MIME sniffing"
-        )
+        recommendations.append("Set X-Content-Type-Options: nosniff to prevent MIME sniffing")
 
     if security_score >= 90:
         recommendations.append("Excellent security header coverage!")
@@ -884,7 +869,9 @@ async def header_analysis(
     elif security_score >= 50:
         recommendations.append("Moderate security header coverage - consider improvements")
     else:
-        recommendations.append("Critical: Poor security header coverage - immediate action recommended")
+        recommendations.append(
+            "Critical: Poor security header coverage - immediate action recommended"
+        )
 
     # Create report
     report = HeaderReport(

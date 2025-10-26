@@ -51,7 +51,9 @@ class CDXClient:
         """Close the HTTP client."""
         await self.client.aclose()
 
-    async def _rate_limited_request(self, url: str, params: Optional[dict] = None) -> httpx.Response:
+    async def _rate_limited_request(
+        self, url: str, params: Optional[dict] = None
+    ) -> httpx.Response:
         """Make a rate-limited HTTP request.
 
         Args:

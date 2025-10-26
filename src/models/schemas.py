@@ -40,9 +40,7 @@ class CrawlInfo(BaseModel):
     name: str = Field(..., description="Human-readable crawl name")
     date: datetime = Field(..., description="Crawl date")
     status: CrawlStatus = Field(default=CrawlStatus.UNKNOWN, description="Crawl status")
-    approximate_size_gb: Optional[float] = Field(
-        None, description="Approximate size in gigabytes"
-    )
+    approximate_size_gb: Optional[float] = Field(None, description="Approximate size in gigabytes")
 
 
 class CrawlStats(BaseModel):
@@ -141,9 +139,7 @@ class ParsedHtml(BaseModel):
     url: str
     title: Optional[str] = None
     meta_tags: dict[str, str] = Field(default_factory=dict)
-    headings: dict[str, list[str]] = Field(
-        default_factory=dict, description="h1-h6 headings"
-    )
+    headings: dict[str, list[str]] = Field(default_factory=dict, description="h1-h6 headings")
     links: list[str] = Field(default_factory=list)
     scripts: list[str] = Field(default_factory=list, description="Script sources")
     styles: list[str] = Field(default_factory=list, description="Stylesheet sources")
@@ -230,9 +226,7 @@ class TechReport(BaseModel):
     crawl_id: str
     pages_analyzed: int
     technologies: dict[str, int] = Field(..., description="Technology -> page count")
-    categories: dict[str, dict[str, int]] = Field(
-        ..., description="Category -> {tech: count}"
-    )
+    categories: dict[str, dict[str, int]] = Field(..., description="Category -> {tech: count}")
     adoption_percentage: dict[str, float] = Field(
         ..., description="Technology -> percentage of pages"
     )
@@ -253,9 +247,7 @@ class KeywordStats(BaseModel):
     """Keyword frequency analysis."""
 
     keywords: list[str]
-    frequencies: dict[str, dict[str, int]] = Field(
-        ..., description="keyword -> {url: count}"
-    )
+    frequencies: dict[str, dict[str, int]] = Field(..., description="keyword -> {url: count}")
     total_occurrences: dict[str, int] = Field(..., description="keyword -> total")
     tfidf_scores: Optional[dict[str, dict[str, float]]] = None
 
@@ -267,9 +259,7 @@ class Timeline(BaseModel):
     crawls: list[str]
     page_counts: dict[str, int] = Field(..., description="crawl_id -> page_count")
     size_bytes: dict[str, int] = Field(..., description="crawl_id -> size")
-    technologies_added: dict[str, list[str]] = Field(
-        ..., description="crawl_id -> [technologies]"
-    )
+    technologies_added: dict[str, list[str]] = Field(..., description="crawl_id -> [technologies]")
     technologies_removed: dict[str, list[str]] = Field(
         ..., description="crawl_id -> [technologies]"
     )
@@ -281,9 +271,7 @@ class HeaderReport(BaseModel):
     domain: str
     crawl_id: str
     pages_analyzed: int
-    security_headers: dict[str, float] = Field(
-        ..., description="header -> adoption_percentage"
-    )
+    security_headers: dict[str, float] = Field(..., description="header -> adoption_percentage")
     caching_policies: dict[str, int] = Field(..., description="policy -> count")
     servers: dict[str, int] = Field(..., description="server -> count")
     security_score: float = Field(..., ge=0.0, le=100.0)
@@ -294,11 +282,14 @@ class HeaderReport(BaseModel):
 class ExportResult(BaseModel):
     """Result of export operation."""
 
-    format: str = Field(..., description="csv, jsonl, etc.")
-    filepath: Optional[str] = None
-    row_count: int
-    size_bytes: int
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    output_path: str = Field(..., description="Path to the exported file")
+    format: str = Field(..., description="Export format (csv, jsonl, warc, etc.)")
+    records_exported: int = Field(..., description="Number of records successfully exported")
+    file_size_bytes: int = Field(..., description="Size of exported file in bytes")
+    duration_seconds: float = Field(..., description="Time taken to export in seconds")
+    errors: list[str] = Field(
+        default_factory=list, description="List of errors encountered during export"
+    )
 
 
 class Dataset(BaseModel):
@@ -324,22 +315,63 @@ class SizeEstimate(BaseModel):
     recommendation: str = Field(..., description="Use cache, sample, or proceed")
 
 
-# Advanced Models
+# Advanced Analysis Models (Phase 9)
 class ContentClassification(BaseModel):
-    """Content classification result."""
+    """Web page classification result.
 
-    url: str
-    category: str = Field(
-        ..., description="news, ecommerce, documentation, blog, corporate, etc."
+    Classifies web pages by type using composition of multiple analysis tools.
+    """
+
+    url: str = Field(..., description="URL that was classified")
+    page_type: str = Field(
+        ..., description="Page type: blog, product, documentation, news, landing_page, or other"
     )
-    confidence: float = Field(..., ge=0.0, le=1.0)
-    features: dict[str, Any] = Field(default_factory=dict)
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Classification confidence")
+    signals: dict[str, Any] = Field(
+        default_factory=dict, description="Evidence signals used for classification"
+    )
+    language: str = Field(..., description="Detected language code")
+    content_quality_score: float = Field(..., ge=0.0, le=100.0, description="SEO quality score")
 
 
-class SpamScore(BaseModel):
-    """Spam/low-quality detection."""
+class SpamAnalysis(BaseModel):
+    """Spam detection analysis result.
 
-    domain: str
-    score: float = Field(..., ge=0.0, le=100.0, description="0=clean, 100=spam")
-    indicators: list[str] = Field(default_factory=list)
-    details: dict[str, Any] = Field(default_factory=dict)
+    Analyzes content quality signals to detect spam or low-quality pages.
+    """
+
+    url: str = Field(..., description="URL that was analyzed")
+    spam_score: float = Field(..., ge=0.0, le=100.0, description="Spam score (0=clean, 100=spam)")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Detection confidence")
+    spam_signals: list[str] = Field(
+        default_factory=list, description="List of spam indicators detected"
+    )
+    quality_signals: list[str] = Field(
+        default_factory=list, description="List of quality indicators detected"
+    )
+    recommendation: str = Field(
+        ..., description="Overall recommendation: likely_spam, suspicious, or likely_legitimate"
+    )
+
+
+class Trend(BaseModel):
+    """Individual trend metric detected."""
+
+    metric: str = Field(..., description="Metric name: page_count, technology_adoption, etc.")
+    direction: str = Field(..., description="Trend direction: increasing, decreasing, or stable")
+    rate_of_change: float = Field(..., description="Percentage change rate")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Trend confidence")
+
+
+class TrendAnalysis(BaseModel):
+    """Domain trend analysis result.
+
+    Analyzes domain evolution trends across multiple crawls.
+    """
+
+    domain: str = Field(..., description="Domain that was analyzed")
+    time_period: dict[str, str] = Field(..., description="Time period with start and end crawl IDs")
+    trends: list[Trend] = Field(default_factory=list, description="List of detected trends")
+    insights: list[str] = Field(
+        default_factory=list, description="Generated insights from trend analysis"
+    )
