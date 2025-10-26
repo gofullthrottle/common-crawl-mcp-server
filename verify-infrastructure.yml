@@ -1,0 +1,352 @@
+---
+# Common Crawl MCP Server - Infrastructure Verification Playbook
+# Purpose: Verify connectivity to all required and optional infrastructure services
+# Generated: 2025-10-25
+#
+# Usage:
+#   ansible-playbook verify-infrastructure.yml -i localhost,
+#
+# Requirements:
+#   - redis-cli (for Redis testing)
+#   - aws-cli (for S3 testing)
+#   - psql (for PostgreSQL testing, optional)
+#   - Python with required packages
+
+- name: Verify Common Crawl MCP Server Infrastructure
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+
+  vars:
+    # Load from .env.infrastructure or use defaults
+    cache_dir: "{{ lookup('env', 'CACHE_DIR') | default('./cache', true) }}"
+    data_dir: "./data"
+    redis_host: "redis_redis"
+    redis_port: 6379
+    redis_password: "R3d15cash"
+    postgres_host: "postgres_postgres-percona"
+    postgres_port: 5432
+    postgres_db: "commoncrawl"
+    minio_host: "minio_minio"
+    minio_port: 9000
+    s3_bucket: "commoncrawl"
+    s3_region: "us-east-1"
+
+  tasks:
+    # =========================================================================
+    # REQUIRED SERVICES VERIFICATION
+    # =========================================================================
+
+    - name: "✅ Section 1: Local File System Checks"
+      debug:
+        msg: "Verifying local cache and data directories..."
+
+    - name: Ensure cache directory exists and is writable
+      block:
+        - name: Create cache directory
+          file:
+            path: "{{ cache_dir }}"
+            state: directory
+            mode: '0755'
+
+        - name: Test cache directory write
+          command: touch "{{ cache_dir }}/test_write"
+          changed_when: false
+
+        - name: Remove test file
+          file:
+            path: "{{ cache_dir }}/test_write"
+            state: absent
+
+        - name: Cache directory verification SUCCESS
+          debug:
+            msg: "✅ Cache directory {{ cache_dir }} is writable"
+      rescue:
+        - name: Cache directory verification FAILED
+          fail:
+            msg: "❌ Cache directory {{ cache_dir }} is not writable"
+
+    - name: Ensure data directory exists and is writable
+      block:
+        - name: Create data directory
+          file:
+            path: "{{ data_dir }}"
+            state: directory
+            mode: '0755'
+
+        - name: Test data directory write
+          command: touch "{{ data_dir }}/test_write"
+          changed_when: false
+
+        - name: Remove test file
+          file:
+            path: "{{ data_dir }}/test_write"
+            state: absent
+
+        - name: Data directory verification SUCCESS
+          debug:
+            msg: "✅ Data directory {{ data_dir }} is writable"
+      rescue:
+        - name: Data directory verification FAILED
+          fail:
+            msg: "❌ Data directory {{ data_dir }} is not writable"
+
+    - name: "✅ Section 2: S3 Anonymous Access Verification"
+      debug:
+        msg: "Testing anonymous access to Common Crawl S3 bucket..."
+
+    - name: Test S3 anonymous access to Common Crawl
+      block:
+        - name: List Common Crawl collections
+          command: aws s3 ls s3://{{ s3_bucket }}/cc-index/collections/ --no-sign-request --region {{ s3_region }}
+          register: s3_test
+          changed_when: false
+
+        - name: S3 access verification SUCCESS
+          debug:
+            msg:
+              - "✅ S3 anonymous access working"
+              - "Found {{ s3_test.stdout_lines | length }} crawl collections"
+              - "Sample collections:"
+              - "{{ s3_test.stdout_lines[:3] | default(['(no collections found)']) | join('\n') }}"
+      rescue:
+        - name: S3 access verification FAILED
+          fail:
+            msg: "❌ Cannot access Common Crawl S3 bucket anonymously. Check internet connectivity and AWS CLI installation."
+
+    # =========================================================================
+    # OPTIONAL SERVICES VERIFICATION (Redis)
+    # =========================================================================
+
+    - name: "✅ Section 3: Redis Connection Verification (Optional)"
+      debug:
+        msg: "Testing Redis connection (optional but recommended)..."
+
+    - name: Test Redis connection
+      block:
+        - name: Ping Redis server
+          command: redis-cli -h {{ redis_host }} -p {{ redis_port }} -a {{ redis_password }} PING
+          register: redis_test
+          changed_when: false
+          no_log: true  # Don't log password
+
+        - name: Redis verification SUCCESS
+          debug:
+            msg: "✅ Redis is accessible at {{ redis_host }}:{{ redis_port }}"
+          when: redis_test.stdout == "PONG"
+
+        - name: Redis verification UNEXPECTED RESPONSE
+          debug:
+            msg: "⚠️ Redis responded but not with PONG: {{ redis_test.stdout }}"
+          when: redis_test.stdout != "PONG"
+      rescue:
+        - name: Redis verification FAILED (not critical)
+          debug:
+            msg:
+              - "⚠️ Redis not accessible at {{ redis_host }}:{{ redis_port }}"
+              - "This is OPTIONAL - MCP server will fall back to local file cache"
+              - "To enable Redis caching, ensure redis_redis service is running"
+
+    - name: Test Redis set/get operations
+      block:
+        - name: Set test key in Redis
+          command: redis-cli -h {{ redis_host }} -p {{ redis_port }} -a {{ redis_password }} SET test_key "test_value"
+          register: redis_set
+          changed_when: false
+          no_log: true
+
+        - name: Get test key from Redis
+          command: redis-cli -h {{ redis_host }} -p {{ redis_port }} -a {{ redis_password }} GET test_key
+          register: redis_get
+          changed_when: false
+          no_log: true
+
+        - name: Delete test key
+          command: redis-cli -h {{ redis_host }} -p {{ redis_port }} -a {{ redis_password }} DEL test_key
+          changed_when: false
+          no_log: true
+
+        - name: Redis operations verification SUCCESS
+          debug:
+            msg: "✅ Redis read/write operations working correctly"
+          when: redis_get.stdout == "test_value"
+      rescue:
+        - name: Redis operations FAILED
+          debug:
+            msg: "⚠️ Redis connection works but read/write operations failed"
+      when: redis_test is defined and redis_test.stdout == "PONG"
+
+    # =========================================================================
+    # OPTIONAL SERVICES VERIFICATION (PostgreSQL)
+    # =========================================================================
+
+    - name: "✅ Section 4: PostgreSQL Connection Verification (Optional)"
+      debug:
+        msg: "Testing PostgreSQL connection (only needed for data export)..."
+
+    - name: Check if PostgreSQL database is configured
+      set_fact:
+        postgres_configured: "{{ lookup('env', 'DATABASE_URL') | default('', true) != '' }}"
+
+    - name: Test PostgreSQL connection
+      block:
+        - name: Connect to PostgreSQL
+          command: >
+            psql -h {{ postgres_host }} -p {{ postgres_port }}
+            -U commoncrawl_user -d {{ postgres_db }}
+            -c "SELECT version();"
+          environment:
+            PGPASSWORD: "CommoncrawlDb$ecur3Pass!"
+          register: postgres_test
+          changed_when: false
+          no_log: true
+
+        - name: PostgreSQL verification SUCCESS
+          debug:
+            msg:
+              - "✅ PostgreSQL is accessible"
+              - "{{ postgres_test.stdout_lines[0] | default('(no version info)') }}"
+      rescue:
+        - name: PostgreSQL verification FAILED (not critical)
+          debug:
+            msg:
+              - "⚠️ PostgreSQL not accessible or not configured"
+              - "This is OPTIONAL - only needed for export_to_database/sync_to_database tools"
+              - "To enable, create database and uncomment DATABASE_URL in .env.infrastructure"
+      when: postgres_configured
+
+    - name: PostgreSQL not configured message
+      debug:
+        msg:
+          - "ℹ️ PostgreSQL export not configured (optional)"
+          - "To enable dataset exports to PostgreSQL:"
+          - "  1. Create database: CREATE DATABASE commoncrawl;"
+          - "  2. Create user: CREATE USER commoncrawl_user WITH PASSWORD '...';"
+          - "  3. Uncomment DATABASE_URL in .env.infrastructure"
+      when: not postgres_configured
+
+    # =========================================================================
+    # OPTIONAL SERVICES VERIFICATION (MinIO)
+    # =========================================================================
+
+    - name: "✅ Section 5: MinIO Connection Verification (Optional)"
+      debug:
+        msg: "Testing MinIO connection (only needed for private WARC storage)..."
+
+    - name: Check if MinIO is configured
+      set_fact:
+        minio_configured: "{{ lookup('env', 'MINIO_ENDPOINT') | default('', true) != '' }}"
+
+    - name: Test MinIO connection
+      block:
+        - name: List MinIO buckets
+          command: >
+            aws s3 ls
+            --endpoint-url http://{{ minio_host }}:{{ minio_port }}
+          environment:
+            AWS_ACCESS_KEY_ID: "minioadmin"
+            AWS_SECRET_ACCESS_KEY: "Min10S3cr3tK3y!"
+          register: minio_test
+          changed_when: false
+          no_log: true
+
+        - name: MinIO verification SUCCESS
+          debug:
+            msg:
+              - "✅ MinIO is accessible at {{ minio_host }}:{{ minio_port }}"
+              - "Buckets: {{ minio_test.stdout_lines | default(['(no buckets)']) | join(', ') }}"
+      rescue:
+        - name: MinIO verification FAILED (not critical)
+          debug:
+            msg:
+              - "⚠️ MinIO not accessible or not configured"
+              - "This is OPTIONAL - only needed for export_warc_subset tool"
+              - "To enable, uncomment MINIO_* variables in .env.infrastructure"
+      when: minio_configured
+
+    - name: MinIO not configured message
+      debug:
+        msg:
+          - "ℹ️ MinIO private storage not configured (optional)"
+          - "To enable private WARC archive storage:"
+          - "  1. Create bucket: mc mb minio/commoncrawl-private"
+          - "  2. Uncomment MINIO_* variables in .env.infrastructure"
+      when: not minio_configured
+
+    # =========================================================================
+    # PYTHON DEPENDENCIES VERIFICATION
+    # =========================================================================
+
+    - name: "✅ Section 6: Python Dependencies Verification"
+      debug:
+        msg: "Checking Python environment and dependencies..."
+
+    - name: Check Python version
+      command: python3 --version
+      register: python_version
+      changed_when: false
+
+    - name: Python version check
+      debug:
+        msg: "✅ {{ python_version.stdout }}"
+
+    - name: Check uv package manager
+      block:
+        - name: Check if uv is installed
+          command: uv --version
+          register: uv_version
+          changed_when: false
+
+        - name: uv package manager found
+          debug:
+            msg: "✅ uv package manager installed: {{ uv_version.stdout }}"
+      rescue:
+        - name: uv not found (not critical)
+          debug:
+            msg:
+              - "⚠️ uv package manager not found"
+              - "Install with: curl -LsSf https://astral.sh/uv/install.sh | sh"
+              - "Or use pip instead: pip install -e ."
+
+    - name: Check for project dependencies
+      stat:
+        path: "{{ playbook_dir }}/pyproject.toml"
+      register: pyproject_file
+
+    - name: Project dependencies check
+      debug:
+        msg: "✅ Project dependencies defined in pyproject.toml"
+      when: pyproject_file.stat.exists
+
+    # =========================================================================
+    # FINAL SUMMARY
+    # =========================================================================
+
+    - name: "📊 Infrastructure Verification Summary"
+      debug:
+        msg:
+          - ""
+          - "════════════════════════════════════════════════════════════════"
+          - "  Common Crawl MCP Server - Infrastructure Verification Summary"
+          - "════════════════════════════════════════════════════════════════"
+          - ""
+          - "REQUIRED SERVICES:"
+          - "  ✅ Local file cache: {{ cache_dir }} (writable)"
+          - "  ✅ Data directory: {{ data_dir }} (writable)"
+          - "  ✅ S3 anonymous access: Common Crawl bucket accessible"
+          - "  ✅ SQLite: Auto-created on first run"
+          - ""
+          - "OPTIONAL SERVICES:"
+          - "  {{ '✅' if (redis_test is defined and redis_test.stdout == 'PONG') else '⚠️' }} Redis: {{ redis_host }}:{{ redis_port }} {{ '(connected)' if (redis_test is defined and redis_test.stdout == 'PONG') else '(not available - will use file cache)' }}"
+          - "  {{ '✅' if (postgres_configured and postgres_test is defined and postgres_test.rc == 0) else 'ℹ️' }} PostgreSQL: {{ '(configured)' if postgres_configured else '(not configured - optional for exports)' }}"
+          - "  {{ '✅' if (minio_configured and minio_test is defined and minio_test.rc == 0) else 'ℹ️' }} MinIO: {{ '(configured)' if minio_configured else '(not configured - optional for private WARCs)' }}"
+          - ""
+          - "INFRASTRUCTURE STATUS: ✅ READY TO DEPLOY"
+          - ""
+          - "Next Steps:"
+          - "  1. Review .env.infrastructure and configure optional services"
+          - "  2. Install dependencies: uv sync (or pip install -e .)"
+          - "  3. Run MCP server: python -m src.server"
+          - "  4. Configure in Claude Desktop/Code MCP settings"
+          - ""
+          - "════════════════════════════════════════════════════════════════"

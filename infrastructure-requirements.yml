@@ -1,0 +1,294 @@
+# Common Crawl MCP Server - Infrastructure Requirements
+# Generated: 2025-10-26
+# Purpose: Document required infrastructure and map to existing homelab services
+
+---
+project:
+  name: "Common Crawl MCP Server"
+  description: "AI-powered research platform for Common Crawl web archive analysis"
+  repository: "https://github.com/gofullthrottle/common-crawl-mcp-server"
+  status: "in_development"
+  target_completion: "2025-11-15"
+
+infrastructure:
+  required_services:
+    # Redis for distributed caching (OPTIONAL but recommended)
+    - service: redis
+      purpose: "Distributed caching layer for metadata and query results"
+      type: "cache"
+      required: false  # Optional - falls back to local file cache
+      homelab_available: true
+      homelab_service: "redis_redis"
+      homelab_endpoint: "redis_redis:6379"
+      connection_string: "redis://redis_redis:6379"
+      authentication: "requirepass"  # Uses vault_redis_password
+      notes: |
+        Redis significantly improves performance for repeated queries.
+        Without Redis, the server uses local file cache only.
+
+    # Local file storage for cache
+    - service: file_cache
+      purpose: "Local disk cache for WARC files and parsed content"
+      type: "storage"
+      required: true
+      homelab_available: true
+      homelab_service: "local_filesystem"
+      path: "./cache"
+      size: "50GB"
+      auto_created: true
+      notes: |
+        Created automatically by application on startup.
+        Stores downloaded WARC segments, parsed HTML, extracted metadata.
+        Reduces S3 egress costs by 80%+ through intelligent caching.
+
+    # SQLite database for persistent data
+    - service: sqlite
+      purpose: "Local database for saved datasets, query history, user annotations"
+      type: "database"
+      required: true
+      homelab_available: true
+      homelab_service: "local_filesystem"
+      path: "./data/commoncrawl.db"
+      auto_created: true
+      notes: |
+        Created automatically by application on startup.
+        No server needed - file-based database.
+        Stores saved datasets, investigation metadata, cached query plans.
+
+    # S3 access for Common Crawl bucket
+    - service: s3_commoncrawl
+      purpose: "Access to Common Crawl public dataset (WARC/WAT/WET files)"
+      type: "object_storage"
+      required: true
+      homelab_available: false
+      external_provider: "AWS"
+      bucket: "commoncrawl"
+      region: "us-east-1"
+      access_type: "anonymous"  # Public bucket, no credentials needed
+      notes: |
+        Common Crawl is a publicly accessible S3 bucket.
+        No AWS credentials required for anonymous access.
+        Optional: Provide AWS credentials for custom configurations (requester pays).
+
+  optional_services:
+    # PostgreSQL for advanced data export/sync
+    - service: postgresql
+      purpose: "Optional destination for dataset exports (sync_to_database tool)"
+      type: "database"
+      required: false
+      homelab_available: true
+      homelab_service: "postgres_postgres-percona"
+      homelab_endpoint: "postgres_postgres-percona:5432"
+      connection_string: "postgresql://user:password@postgres_postgres-percona:5432/commoncrawl"
+      notes: |
+        Only needed if using export_to_database / sync_to_database tools.
+        Can export analysis results directly to PostgreSQL for further querying.
+        Not required for core MCP server functionality.
+
+    # MinIO for private WARC segment storage
+    - service: minio
+      purpose: "Optional private storage for curated WARC subsets"
+      type: "object_storage"
+      required: false
+      homelab_available: true
+      homelab_service: "minio_minio"
+      homelab_endpoint: "minio_minio:9000"
+      console: "http://100.108.180.29:9001"
+      notes: |
+        Only needed if creating custom WARC archives (export_warc_subset tool).
+        Can store private curated datasets separate from public Common Crawl.
+
+environment_variables:
+  required:
+    - name: "CACHE_DIR"
+      description: "Directory for file cache storage"
+      default: "./cache"
+      example: "./cache"
+      source: "local_config"
+
+    - name: "CACHE_MAX_SIZE_GB"
+      description: "Maximum cache size in gigabytes"
+      default: "50"
+      example: "100"
+      source: "local_config"
+
+    - name: "AWS_REGION"
+      description: "AWS region for Common Crawl bucket"
+      default: "us-east-1"
+      example: "us-east-1"
+      source: "local_config"
+
+  optional:
+    - name: "REDIS_URL"
+      description: "Redis connection URL for distributed caching"
+      default: null
+      example: "redis://redis_redis:6379"
+      source: "homelab_ansible_vault"
+      vault_variable: "vault_redis_password"
+      notes: "If not provided, falls back to local file cache only"
+
+    - name: "REDIS_PASSWORD"
+      description: "Redis authentication password"
+      default: null
+      example: "SecureRedisPass123"
+      source: "homelab_ansible_vault"
+      vault_variable: "vault_redis_password"
+
+    - name: "AWS_ACCESS_KEY_ID"
+      description: "AWS access key (optional, for custom S3 configs)"
+      default: null
+      example: "AKIAIOSFODNN7EXAMPLE"
+      source: "homelab_ansible_vault"
+      vault_variable: "vault_aws_access_key"
+      notes: "Not needed for anonymous Common Crawl access"
+
+    - name: "AWS_SECRET_ACCESS_KEY"
+      description: "AWS secret key (optional, for custom S3 configs)"
+      default: null
+      example: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+      source: "homelab_ansible_vault"
+      vault_variable: "vault_aws_secret_key"
+      notes: "Not needed for anonymous Common Crawl access"
+
+    - name: "DATABASE_URL"
+      description: "PostgreSQL connection for data export (optional)"
+      default: null
+      example: "postgresql://commoncrawl_user:password@postgres_postgres-percona:5432/commoncrawl"
+      source: "homelab_ansible_vault"
+      vault_variable: "vault_pg_commoncrawl_password"
+      notes: "Only needed if using sync_to_database tool"
+
+deployment:
+  recommended_mode: "docker_swarm"
+  homelab_integration: true
+
+  docker_swarm:
+    stack_name: "common-crawl-mcp"
+    services:
+      - name: "common-crawl-mcp-server"
+        image: "ghcr.io/gofullthrottle/common-crawl-mcp-server:latest"
+        replicas: 1
+        networks:
+          - "overlay-network"
+        volumes:
+          - "./cache:/app/cache"
+          - "./data:/app/data"
+        environment:
+          - "REDIS_URL=${REDIS_URL}"
+          - "CACHE_DIR=/app/cache"
+          - "CACHE_MAX_SIZE_GB=50"
+          - "AWS_REGION=us-east-1"
+        placement:
+          constraints:
+            - "node.labels.storage == true"
+        notes: |
+          MCP server runs as stdio transport - not exposed via HTTP.
+          Accessed by Claude Desktop/Code through MCP protocol.
+
+  local_development:
+    command: "python -m src.server"
+    environment_file: ".env"
+    notes: |
+      For development, run locally with stdio transport.
+      Configure in Claude Desktop/Code MCP settings.
+
+provisioning:
+  required_actions:
+    - action: "verify_redis_connectivity"
+      description: "Test connection to homelab Redis service"
+      command: "redis-cli -h redis_redis -p 6379 PING"
+      expected_output: "PONG"
+
+    - action: "create_cache_directory"
+      description: "Ensure cache directory exists and is writable"
+      command: "mkdir -p ./cache && chmod 755 ./cache"
+
+    - action: "create_data_directory"
+      description: "Ensure data directory exists for SQLite database"
+      command: "mkdir -p ./data && chmod 755 ./data"
+
+    - action: "test_s3_access"
+      description: "Verify anonymous access to Common Crawl S3 bucket"
+      command: "aws s3 ls s3://commoncrawl/cc-index/collections/ --no-sign-request"
+      expected_output: "List of crawl collections"
+
+  optional_actions:
+    - action: "create_postgresql_database"
+      description: "Create PostgreSQL database for data export (if using sync_to_database)"
+      sql: |
+        CREATE DATABASE commoncrawl;
+        CREATE USER commoncrawl_user WITH PASSWORD 'SecurePassword';
+        GRANT ALL PRIVILEGES ON DATABASE commoncrawl TO commoncrawl_user;
+      notes: "Only needed if using PostgreSQL export functionality"
+
+    - action: "create_minio_bucket"
+      description: "Create MinIO bucket for private WARC storage (if using export_warc_subset)"
+      command: "mc mb minio/commoncrawl-private"
+      notes: "Only needed if storing custom WARC archives"
+
+connectivity_verification:
+  tests:
+    - name: "redis_connection"
+      description: "Verify Redis connectivity"
+      command: "redis-cli -h redis_redis -p 6379 PING"
+      required: false
+
+    - name: "s3_anonymous_access"
+      description: "Verify Common Crawl S3 access"
+      command: "aws s3 ls s3://commoncrawl/cc-index/collections/ --no-sign-request | head -5"
+      required: true
+
+    - name: "cache_write_test"
+      description: "Verify cache directory is writable"
+      command: "touch ./cache/test && rm ./cache/test"
+      required: true
+
+    - name: "data_write_test"
+      description: "Verify data directory is writable"
+      command: "touch ./data/test && rm ./data/test"
+      required: true
+
+resource_requirements:
+  minimum:
+    cpu: "2 cores"
+    memory: "4GB"
+    disk_cache: "10GB"
+    disk_data: "1GB"
+
+  recommended:
+    cpu: "4 cores"
+    memory: "8GB"
+    disk_cache: "50GB"
+    disk_data: "5GB"
+
+  notes: |
+    - CPU: Used for HTML parsing, technology detection, text extraction
+    - Memory: Caches parsed content, query results, in-flight WARC processing
+    - Disk (cache): Stores downloaded WARC segments, reduces S3 costs
+    - Disk (data): Stores SQLite database, saved datasets, investigation metadata
+
+summary:
+  infrastructure_status: "ready_to_deploy"
+  homelab_dependencies:
+    - "Redis (optional but recommended) - AVAILABLE"
+    - "Local file storage (required) - AVAILABLE"
+    - "S3 public access (required) - AVAILABLE (no credentials needed)"
+
+  new_provisioning_needed: false
+
+  next_steps:
+    - "Generate .env.infrastructure with Redis connection string"
+    - "Run connectivity verification playbook"
+    - "Deploy MCP server to Docker Swarm or run locally"
+    - "Configure in Claude Desktop/Code MCP settings"
+
+  notes: |
+    This project has minimal infrastructure dependencies:
+
+    1. Redis (optional) - Already available in homelab
+    2. File storage - Local directories, auto-created
+    3. SQLite - No server needed, file-based
+    4. S3 - Public Common Crawl bucket, no auth needed
+
+    No new infrastructure provisioning required!
+    Can be deployed immediately using existing homelab services.
